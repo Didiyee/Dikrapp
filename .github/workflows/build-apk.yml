@@ -29,15 +29,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build web app + sync Capacitor
-        run: npm run cap:sync
+      - name: Build web app
+        run: npm run build
+
+      - name: Sync Capacitor
+        run: npx cap sync android
 
       - name: Grant execute permission to Gradle wrapper
         run: chmod +x android/gradlew
 
       - name: Build debug APK
         working-directory: android
-        run: ./gradlew assembleDebug
+        run: ./gradlew assembleDebug --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -66,15 +69,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build web app + sync Capacitor
-        run: npm run cap:sync
+      - name: Build web app
+        run: npm run build
+
+      - name: Sync Capacitor
+        run: npx cap sync android
 
       - name: Grant execute permission to Gradle wrapper
         run: chmod +x android/gradlew
 
       - name: Build debug APK
         working-directory: android
-        run: ./gradlew assembleDebug
+        run: ./gradlew assembleDebug --stacktrace
 
       - name: Rename APK
         run: cp android/app/build/outputs/apk/debug/app-debug.apk salati-dhikri.apk
