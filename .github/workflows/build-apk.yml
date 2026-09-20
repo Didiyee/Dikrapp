@@ -1,0 +1,82 @@
+name: Build Android APK (debug)
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+    tags: ['v*']
+
+jobs:
+  build-apk:
+    if: github.ref_type != 'tag'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web app + sync Capacitor
+        run: npm run cap:sync
+
+      - name: Build debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: salati-dhikri-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+
+  # On version tags (v1.0, v1.1...) publish a GitHub Release with the APK
+  # → the Obtainium app on your phone detects it and installs/updates automatically
+  release-apk:
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web app + sync Capacitor
+        run: npm run cap:sync
+
+      - name: Build debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug
+
+      - name: Rename APK
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk salati-dhikri.apk
+
+      - name: Publish Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: salati-dhikri.apk
+          body: |
+            🕌 صلاتي وذكري — نسخة أندرويد
+            ثبّت ملف salati-dhikri.apk على هاتفك (اسمح بالتثبيت من مصادر غير معروفة).

@@ -1,0 +1,15 @@
+{
+  "name": "صلاتي وذكري",
+  "short_name": "صلاتي وذكري",
+  "description": "مواقيت الصلاة والأذكار اليومية واتجاه القبلة",
+  "start_url": ".",
+  "display": "standalone",
+  "dir": "rtl",
+  "lang": "ar",
+  "background_color": "#047857",
+  "theme_color": "#047857",
+  "icons": [
+    { "src": "icon-192.svg", "sizes": "192x192", "type": "image/svg+xml" },
+    { "src": "icon-512.svg", "sizes": "512x512", "type": "image/svg+xml" }
+  ]
+}

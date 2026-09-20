@@ -1,0 +1,9 @@
+{
+  "appId": "com.salatidhikri.app",
+  "appName": "صلاتي وذكري",
+  "webDir": "dist",
+  "backgroundColor": "#047857",
+  "android": {
+    "allowMixedContent": true
+  }
+}
