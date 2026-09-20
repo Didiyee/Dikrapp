@@ -32,8 +32,14 @@ jobs:
       - name: Build web app
         run: npm run build
 
-      - name: Sync Capacitor
-        run: ./node_modules/.bin/cap copy android
+      - name: Sync Capacitor (copy web assets, no CLI needed)
+        run: |
+          rm -rf android/app/src/main/assets/public
+          mkdir -p android/app/src/main/assets/public
+          cp -r dist/* android/app/src/main/assets/public/
+          cp capacitor.config.json android/app/src/main/assets/capacitor.config.json
+          echo '{"plugins":[]}' > android/app/src/main/assets/capacitor.plugins.json
+          ls android/app/src/main/assets/public | head -n 5
 
       - name: Grant execute permission to Gradle wrapper
         run: chmod +x android/gradlew
@@ -72,8 +78,14 @@ jobs:
       - name: Build web app
         run: npm run build
 
-      - name: Sync Capacitor
-        run: ./node_modules/.bin/cap copy android
+      - name: Sync Capacitor (copy web assets, no CLI needed)
+        run: |
+          rm -rf android/app/src/main/assets/public
+          mkdir -p android/app/src/main/assets/public
+          cp -r dist/* android/app/src/main/assets/public/
+          cp capacitor.config.json android/app/src/main/assets/capacitor.config.json
+          echo '{"plugins":[]}' > android/app/src/main/assets/capacitor.plugins.json
+          ls android/app/src/main/assets/public | head -n 5
 
       - name: Grant execute permission to Gradle wrapper
         run: chmod +x android/gradlew
