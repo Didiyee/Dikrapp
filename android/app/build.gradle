@@ -1,5 +1,21 @@
 apply plugin: 'com.android.application'
 
+def verCode = ((System.getenv("VERSION_CODE") ?: "1") as String).toInteger()
+def verName = (System.getenv("VERSION_NAME") ?: "1.0") as String
+def keystoreFile = System.getenv("KEYSTORE_FILE")
+def hasKeystore = keystoreFile != null && !(keystoreFile as String).isEmpty()
+
+if (hasKeystore) {
+    android.signingConfigs {
+        release {
+            storeFile file(keystoreFile)
+            storePassword System.getenv("KEYSTORE_PASSWORD")
+            keyAlias System.getenv("KEY_ALIAS")
+            keyPassword System.getenv("KEY_PASSWORD")
+        }
+    }
+}
+
 android {
     namespace = "com.salatidhikri.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +23,8 @@ android {
         applicationId "com.salatidhikri.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode verCode
+        versionName verName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -18,6 +34,9 @@ android {
     }
     buildTypes {
         release {
+            if (hasKeystore) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

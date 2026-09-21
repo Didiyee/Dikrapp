@@ -12,6 +12,16 @@ dist
 dist-ssr
 *.local
 
+# Android release signing - NEVER commit
+*.jks
+*.keystore
+*.b64
+.keystore_secrets_DO_NOT_COMMIT.txt
+genkey.py
+dlandroid.py
+android/release.keystore
+android/local.properties
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
