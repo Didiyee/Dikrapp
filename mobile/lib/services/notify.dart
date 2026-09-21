@@ -1,5 +1,4 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 import '../core/prayer.dart';
@@ -13,14 +12,7 @@ Future<void> initNotifications() async {
   await notifications.initialize(
     const InitializationSettings(android: androidInit, iOS: iosInit),
   );
-  try {
-    tzdata.initializeTimeZones();
-    final zone = await FlutterTimezone.getLocalTimezone();
-    tz.setLocalLocation(tz.getLocation(zone));
-  } catch (_) {
-    tzdata.initializeTimeZones();
-    tz.setLocalLocation(tz.getLocation('UTC'));
-  }
+  tzdata.initializeTimeZones();
   final android = notifications.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
   await android?.requestNotificationsPermission();
   await android?.requestExactAlarmsPermission();
@@ -43,19 +35,25 @@ NotificationDetails _details(AppSettings s) {
   );
 }
 
-tz.TZDateTime _todayAt(String hhmm) {
-  final now = tz.TZDateTime.now(tz.local);
+DateTime _todayAt(String hhmm) {
+  final now = DateTime.now();
   final parts = hhmm.split(':');
   final h = int.tryParse(parts[0]) ?? 0;
   final m = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
-  return tz.TZDateTime(tz.local, now.year, now.month, now.day, h, m);
+  return DateTime(now.year, now.month, now.day, h, m);
 }
 
-/// Schedule today's remaining prayers + daily adhkar reminders.
+/// Convert a device-local time to an absolute UTC instant using the
+/// device's current UTC offset (no timezone database lookup needed).
+tz.TZDateTime _toUtc(DateTime local) =>
+    tz.TZDateTime.from(local, tz.UTC).subtract(DateTime.now().timeZoneOffset);
+
+/// Schedule today's remaining prayers + adhkar reminders for the next 7 days.
+/// Called on every app start, so schedules stay fresh.
 Future<void> scheduleDay(Map<String, String> timings, AppSettings s) async {
   try {
     await notifications.cancelAll();
-    final now = tz.TZDateTime.now(tz.local);
+    final now = DateTime.now();
     var id = 100;
     for (final p in prayers) {
       if (s.prayerNotifs[p.key] != true) continue;
@@ -64,7 +62,7 @@ Future<void> scheduleDay(Map<String, String> timings, AppSettings s) async {
       await notifications.zonedSchedule(
         id++, '🕌 ${s.tr('حان وقت الصلاة: صلاة ${p.ar}', 'Prayer time: ${p.en}')}',
         s.tr('حي على الصلاة — تقبّل الله منا ومنكم', 'Come to prayer'),
-        at, _details(s),
+        _toUtc(at), _details(s),
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
       );
@@ -77,13 +75,16 @@ Future<void> scheduleDay(Map<String, String> timings, AppSettings s) async {
       };
       var rid = 200;
       for (final e in rems.entries) {
-        await notifications.zonedSchedule(
-          rid++, e.value, s.tr('لا تنسَ أذكارك 🤲', 'Do not forget your adhkar'),
-          _todayAt(e.key), _details(s),
-          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-          matchDateTimeComponents: DateTimeComponents.time,
-          uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
-        );
+        for (var day = 0; day < 7; day++) {
+          final at = _todayAt(e.key).add(Duration(days: day));
+          if (!at.isAfter(now)) continue;
+          await notifications.zonedSchedule(
+            rid++, e.value, s.tr('لا تنسَ أذكارك 🤲', 'Do not forget your adhkar'),
+            _toUtc(at), _details(s),
+            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+            uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+          );
+        }
       }
     }
   } catch (_) {}
