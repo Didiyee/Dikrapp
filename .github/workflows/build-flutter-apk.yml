@@ -1,0 +1,86 @@
+name: Build Flutter APK (debug)
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+    tags: ['v*']
+
+jobs:
+  build-apk:
+    if: github.ref_type != 'tag'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Build debug APK
+        run: flutter build apk --debug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: salati-dhikri-flutter-apk
+          path: mobile/build/app/outputs/flutter-apk/app-debug.apk
+
+  # On version tags (v2.0, v2.1...) publish a GitHub Release with the APK
+  # -> Obtainium on your phone detects it and installs/updates automatically
+  release-apk:
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Build debug APK
+        run: flutter build apk --debug
+
+      - name: Rename APK
+        run: cp build/app/outputs/flutter-apk/app-debug.apk ../salati-dhikri.apk
+
+      - name: Publish Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: salati-dhikri.apk
+          body: |
+            🕌 صلاتي وذكري (Flutter) — نسخة أندرويد
+            ثبّت ملف salati-dhikri.apk على هاتفك (اسمح بالتثبيت من مصادر غير معروفة).
